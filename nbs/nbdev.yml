@@ -1,0 +1,9 @@
+project:
+  output-dir: _docs
+
+website:
+  title: "Research_code"
+  site-url: "https://gbeane66.github.io/Research_code"
+  description: "Research_code"
+  repo-branch: main
+  repo-url: "https://github.com/gbeane66/Research_code"
