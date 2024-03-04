@@ -4,7 +4,9 @@
 __all__ = ['exp_decay', 'foo']
 
 # %% ../nbs/research_code.ipynb 3
-def exp_decay(time,*popt):
+def exp_decay(time:np.ndarray, # Input array that contains the time.
+    *popt:tuple, # Tuple containing the input parameters
+    ) -> np.ndarray: # A new float array containing the exponnentially decaying function
 
     A,tau1,t0 = popt
 
@@ -12,5 +14,5 @@ def exp_decay(time,*popt):
     
     return decayOutput
 
-# %% ../nbs/research_code.ipynb 6
+# %% ../nbs/research_code.ipynb 5
 def foo(): pass
