@@ -2,4 +2,4 @@ website:
   sidebar:
     contents:
       - index.ipynb
-      - Research_code1.ipynb
+      - research_code.ipynb
