@@ -3,7 +3,9 @@
 # %% auto 0
 __all__ = ['exp_decay', 'foo']
 
-# %% ../nbs/research_code.ipynb 4
+# %% ../nbs/research_code.ipynb 3
+import numpy as np
+
 def exp_decay(time:np.ndarray, # Input array that contains the time.
     popt:tuple, # Tuple containing the input parameters.
     ) -> np.ndarray: # A new float array containing the exponentially decaying function.
@@ -14,5 +16,5 @@ def exp_decay(time:np.ndarray, # Input array that contains the time.
     
     return decayOutput
 
-# %% ../nbs/research_code.ipynb 6
+# %% ../nbs/research_code.ipynb 5
 def foo(): pass
