@@ -7,9 +7,9 @@ __all__ = ['exp_decay', 'foo']
 import numpy as np
 
 def exp_decay(x:np.ndarray, # Input array that contains the indpendent variable.
-    Amplitude: int|np.single, # Prefactor of the exponential decay.
-    tau: int|np.single, # Decay constant.
-    x0: int|np.single, # Offset for the indpendent variable.
+    Amplitude: np.single, # Prefactor of the exponential decay.
+    tau: np.single, # Decay constant.
+    x0: np.single, # Offset for the indpendent variable.
     ) -> np.ndarray: # A new float array containing the exponentially decaying function.
 
     decayOutput = Amplitude * np.exp(-(x-x0)/tau)
