@@ -12,7 +12,7 @@ def exp_decay(x:np.ndarray, # Input array that contains the indpendent variable.
     x0: int|np.single, # Offset for the indpendent variable.
     ) -> np.ndarray: # A new float array containing the exponentially decaying function.
 
-    decayOutput = A * np.exp(-(x-x0)/tau1)
+    decayOutput = Amplitude * np.exp(-(x-x0)/tau1)
     
     return decayOutput
 
