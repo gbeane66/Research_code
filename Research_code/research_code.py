@@ -58,7 +58,7 @@ def convolved_exp_decay(x:np.ndarray, # Input array that contains the indpendent
     '''
     Single exponentially decaying function convolved with a gaussian.
     '''
-    L = len(time) # length of the independent variable.
+    L = len(x) # length of the independent variable.
 
     exp_term = exp_decay(x,Amplitude,tau,x0) # The exponential decay.
 
@@ -83,7 +83,7 @@ def convolved_biexp_decay(x:np.ndarray, # Input array that contains the indpende
     '''
     Bi-exponentially decaying function convolved with a gaussian.
     '''    
-    L = len(time) # length of the independent variable.
+    L = len(x) # length of the independent variable.
 
     biexp_term = biexp_decay(x,Amplitude1,tau1,Amplitude2,tau2,x0) # The biexponential decay.
 
