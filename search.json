@@ -1,0 +1,42 @@
+[
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "Research_code",
+    "section": "",
+    "text": "This file will become your README and also the index of your documentation.",
+    "crumbs": [
+      "Research_code"
+    ]
+  },
+  {
+    "objectID": "index.html#install",
+    "href": "index.html#install",
+    "title": "Research_code",
+    "section": "Install",
+    "text": "Install\npip install Research_code",
+    "crumbs": [
+      "Research_code"
+    ]
+  },
+  {
+    "objectID": "index.html#how-to-use",
+    "href": "index.html#how-to-use",
+    "title": "Research_code",
+    "section": "How to use",
+    "text": "How to use\nFill me in please! Don’t forget code examples:\n\n1+1\n\n2",
+    "crumbs": [
+      "Research_code"
+    ]
+  },
+  {
+    "objectID": "research_code.html",
+    "href": "research_code.html",
+    "title": "research_code",
+    "section": "",
+    "text": "source\n\nexp_decay\n\n exp_decay (x:numpy.ndarray, Amplitude:numpy.float32, tau:numpy.float32,\n            x0:numpy.float32)\n\nSingle exponentially decaying function.\n\n\n\n\n\n\n\n\n\nType\nDetails\n\n\n\n\nx\nndarray\nInput array that contains the indpendent variable.\n\n\nAmplitude\nfloat32\nPrefactor of the exponential decay.\n\n\ntau\nfloat32\nDecay constant.\n\n\nx0\nfloat32\nOffset for the indpendent variable.\n\n\nReturns\nndarray\nA new float array containing the exponentially decaying function.\n\n\n\n\nsource\n\n\nbiexp_decay\n\n biexp_decay (x:numpy.ndarray, Amplitude1:numpy.float32,\n              tau1:numpy.float32, Amplitude2:numpy.float32,\n              tau2:numpy.float32, x0:numpy.float32)\n\nBi-exponentially decaying function.\n\n\n\n\n\n\n\n\n\nType\nDetails\n\n\n\n\nx\nndarray\nInput array that contains the indpendent variable.\n\n\nAmplitude1\nfloat32\nPrefactor of the first exponential decay.\n\n\ntau1\nfloat32\nDecay constant of the first exponential term.\n\n\nAmplitude2\nfloat32\nPrefactor of the second exponential decay.\n\n\ntau2\nfloat32\nDecay constant of the second exponential term.\n\n\nx0\nfloat32\nOffset for the indpendent variable.\n\n\nReturns\nndarray\nA new float array containing the exponentially decaying function.\n\n\n\n\nsource\n\n\ngaussian\n\n gaussian (x:numpy.ndarray, Amplitude:numpy.float32, sigma:numpy.float32,\n           x0:numpy.float32)\n\nGaussian function.\n\n\n\n\n\n\n\n\n\nType\nDetails\n\n\n\n\nx\nndarray\nInput array that contains the indpendent variable.\n\n\nAmplitude\nfloat32\nPrefactor of the gaussian.\n\n\nsigma\nfloat32\nStandard deviation of the gaussian.\n\n\nx0\nfloat32\nOffset for the indpendent variable.\n\n\nReturns\nndarray\nA new float array containing the gaussian function.\n\n\n\n\nsource\n\n\nconvolved_exp_decay\n\n convolved_exp_decay (x:numpy.ndarray, Amplitude:numpy.float32,\n                      tau:numpy.float32, sigma:numpy.float32,\n                      x0:numpy.float32, y0:numpy.float32)\n\nSingle exponentially decaying function convolved with a gaussian.\n\n\n\n\n\n\n\n\n\nType\nDetails\n\n\n\n\nx\nndarray\nInput array that contains the indpendent variable.\n\n\nAmplitude\nfloat32\nPrefactor of the exponential decay.\n\n\ntau\nfloat32\nDecay constant.\n\n\nsigma\nfloat32\nStandard deviation of the gaussian\n\n\nx0\nfloat32\nOffset for the indpendent variable.\n\n\ny0\nfloat32\nOffset in y.\n\n\nReturns\nndarray\nA new float array containing the exponentially decaying function.\n\n\n\n\nsource\n\n\nconvolved_biexp_decay\n\n convolved_biexp_decay (x:numpy.ndarray, Amplitude1:numpy.float32,\n                        tau1:numpy.float32, Amplitude2:numpy.float32,\n                        tau2:numpy.float32, sigma:numpy.float32,\n                        x0:numpy.float32, y0:numpy.float32)\n\nBi-exponentially decaying function convolved with a gaussian.\n\n\n\n\n\n\n\n\n\nType\nDetails\n\n\n\n\nx\nndarray\nInput array that contains the indpendent variable.\n\n\nAmplitude1\nfloat32\nPrefactor of the first exponential decay.\n\n\ntau1\nfloat32\nDecay constant of the first exponential term.\n\n\nAmplitude2\nfloat32\nPrefactor of the second exponential decay.\n\n\ntau2\nfloat32\nDecay constant of the second exponential term.\n\n\nsigma\nfloat32\nStandard deviation of the gaussian\n\n\nx0\nfloat32\nOffset for the indpendent variable.\n\n\ny0\nfloat32\nOffset in y.\n\n\nReturns\nndarray\nA new float array containing the exponentially decaying function.\n\n\n\n\nsource\n\n\nfoo\n\n foo ()",
+    "crumbs": [
+      "research_code"
+    ]
+  }
+]
