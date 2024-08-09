@@ -8,9 +8,9 @@ import numpy as np
 
 # %% ../nbs/research_code.ipynb 4
 def exp_decay(x:np.ndarray, # Input array that contains the indpendent variable.
-    Amplitude: np.single, # Prefactor of the exponential decay.
+    Amplitude: np.single, # Pre-factor of the exponential decay.
     tau: np.single, # Decay constant.
-    x0: np.single, # Offset for the indpendent variable.
+    x0: np.single, # Offset for the independent variable.
     ) -> np.ndarray: # A new float array containing the exponentially decaying function.
     '''
     Single exponentially decaying function.
