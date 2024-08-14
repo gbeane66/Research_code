@@ -156,9 +156,9 @@ def fft_simple(df,**kwargs):
 
     print(N_old,M)
 
-    M-=4 # number of scans (total - delay - mean - std)
-
-    scan_cols = ['scan'+str(i) for i in range(M)]
+    scan_cols = [s for s in df_g if s.startswith('scan')]
+    
+    M = len(scan_cols)
     
     scans = df[scan_cols].to_numpy()
 
@@ -209,9 +209,9 @@ def fft_simple(df,**kwargs):
 # %% ../nbs/research_code.ipynb 12
 def transmission(df1,df2):
 
-    M = len(list(df1.keys()))-5
+    cols = [s for s in df_g if s.startswith('scan')]
     
-    cols = ['scan'+str(i) for i in range(M)]
+    M = len(cols)
 
     col_names = {i:'scan'+str(i) for i in range(M)}
     
@@ -256,11 +256,9 @@ def conductivity(T_in,**kwargs):
     n_B = n_substrate + 1 # from equation section
     e2_h = consts.e**2/consts.h # factor that converts to units of e^2/h
     
-    M = len(list(T_in.keys()))-3
+    cols = [s for s in df_g if s.startswith('scan')]
     
-    print(M)
-    
-    cols = ['scan'+str(i) for i in range(M)]
+    M = len(cols)
 
     col_names = {i:'scan'+str(i) for i in range(M)}
     
