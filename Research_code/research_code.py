@@ -154,9 +154,7 @@ def fft_simple(df,**kwargs):
 
     N_old,M = np.shape(df)
 
-    print(N_old,M)
-
-    scan_cols = [s for s in df_g if s.startswith('scan')]
+    scan_cols = [s for s in df if s.startswith('scan')]
     
     M = len(scan_cols)
     
@@ -178,9 +176,12 @@ def fft_simple(df,**kwargs):
     signal = fftn(data_pad,axes=0)
 
     PSD = np.zeros(np.shape(signal))
+
+    arg_cmplx = np.zeros(np.shape(signal))
     
     for i in range(np.size(signal,1)):
         PSD[:,i] = np.abs(signal[:,i])**2
+        arg_cmplx[:,i] = np.unwrap(np.angle(signal[:,i]))
 
     df2 = pd.DataFrame(signal[1:N2])
 
@@ -200,16 +201,20 @@ def fft_simple(df,**kwargs):
 
     df2['std'] = std_col
 
-    df2['PSD'] = np.abs(df2['mean'])**2
+    df2['PSD'] = np.mean(PSD[1:N2],axis=1)
 
-    df2['PSD_err'] = np.std(np.abs(df2[cols].to_numpy())**2,axis=1)
+    df2['PSD_err'] = np.std(PSD[1:N2],axis=1)
+
+    df2['arg'] = np.mean(arg_cmplx[1:N2],axis=1)
+
+    df2['arg_err'] = np.std(arg_cmplx[1:N2],axis=1)
     
     return df2
 
 # %% ../nbs/research_code.ipynb 12
 def transmission(df1,df2):
 
-    cols = [s for s in df_g if s.startswith('scan')]
+    cols = [s for s in df1 if s.startswith('scan')]
     
     M = len(cols)
 
@@ -256,7 +261,7 @@ def conductivity(T_in,**kwargs):
     n_B = n_substrate + 1 # from equation section
     e2_h = consts.e**2/consts.h # factor that converts to units of e^2/h
     
-    cols = [s for s in df_g if s.startswith('scan')]
+    cols = [s for s in T_in if s.startswith('scan')]
     
     M = len(cols)
 
