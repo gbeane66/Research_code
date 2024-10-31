@@ -1,0 +1,62 @@
+[
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "Research_code",
+    "section": "",
+    "text": "This file will become your README and also the index of your documentation.",
+    "crumbs": [
+      "Research_code"
+    ]
+  },
+  {
+    "objectID": "index.html#install",
+    "href": "index.html#install",
+    "title": "Research_code",
+    "section": "Install",
+    "text": "Install\npip install Research_code",
+    "crumbs": [
+      "Research_code"
+    ]
+  },
+  {
+    "objectID": "index.html#how-to-use",
+    "href": "index.html#how-to-use",
+    "title": "Research_code",
+    "section": "How to use",
+    "text": "How to use\nFill me in please! Don’t forget code examples:\n\n1+1\n\n2",
+    "crumbs": [
+      "Research_code"
+    ]
+  },
+  {
+    "objectID": "research_code.html",
+    "href": "research_code.html",
+    "title": "research_code",
+    "section": "",
+    "text": "source",
+    "crumbs": [
+      "research_code"
+    ]
+  },
+  {
+    "objectID": "research_code.html#useful-functions-for-the-analysis-of-the-2.7um-work",
+    "href": "research_code.html#useful-functions-for-the-analysis-of-the-2.7um-work",
+    "title": "research_code",
+    "section": "Useful Functions for the Analysis of the 2.7um work",
+    "text": "Useful Functions for the Analysis of the 2.7um work\n\nsource\n\nbasic_plot\n\n basic_plot (data_dict, name_array, **kwargs)\n\n\nsource\n\n\nprepulse_analyser\n\n prepulse_analyser (dict_input)\n\n\nsource\n\n\nlinear_spacing\n\n linear_spacing (df_input, **kwargs)\n\n\nsource\n\n\ntreatment\n\n treatment (dict_input)\n\n\nsource\n\n\nmean_spike\n\n mean_spike (df_input)\n\n\nsource\n\n\nplotting_global\n\n plotting_global (named_function, fit_tuple, name_array, data, **kwargs)\n\n\nsource\n\n\nglobal_plot\n\n global_plot (name_dict, data, guess, **kwargs)\n\n\nsource\n\n\nauto_guess\n\n auto_guess (dict_1, nos_traces)\n\n\nsource\n\n\nfile_save\n\n file_save (save_name, fig, **kwargs)\n\n\nsource\n\n\nresid_only\n\n resid_only (named_function, fit_tuple, name_array_sub, full_name_array,\n             data, **kwargs)\n\nCommon to all code\n\nsource\n\n\ncos_fn\n\n cos_fn (x, f, A, x0, y0)",
+    "crumbs": [
+      "research_code"
+    ]
+  },
+  {
+    "objectID": "research_code.html#functions-for-use-with-un-excited-thz-tds-data",
+    "href": "research_code.html#functions-for-use-with-un-excited-thz-tds-data",
+    "title": "research_code",
+    "section": "Functions for use with un-excited THz-TDS data",
+    "text": "Functions for use with un-excited THz-TDS data\n\nsource\n\ndata_reformatter\n\n data_reformatter (df)\n\nThe purpose of this function is to repackage or change the format of the data, such that rather than having two columns with a large number of rows, we have different columns for each scan. The data is also augmented with two additional rows - the mean and the std of the scans.\n\nsource\n\n\nfft_simple\n\n fft_simple (df, **kwargs)\n\nThis is a simple implementation of fft that will work for a DataFrame object\n\nsource\n\n\ntransmission\n\n transmission (df1, df2)\n\n\nsource\n\n\nconductivity\n\n conductivity (T_in, **kwargs)\n\nThis function calculates the complex conductivity according to equation 1 or 2\n\nsource\n\n\nfour_point\n\n four_point (x:numpy.ndarray, mu_e:numpy.float64, mu_h:numpy.float64,\n             dn:numpy.float64, rho_s:numpy.float64, n_0:numpy.float64,\n             **kwargs)\n\n\n\n\n\n\n\n\n\n\nType\nDetails\n\n\n\n\nx\nndarray\nInput array that contains the independent variable.\n\n\nmu_e\nfloat64\nelectron mobility\n\n\nmu_h\nfloat64\nhole mobility\n\n\ndn\nfloat64\nnon-zero conductivity at CNP\n\n\nrho_s\nfloat64\nGate indpendent resistivity given by short range scattering in graphene\n\n\nn_0\nfloat64\ncarrier density at Vg=0 (intrinsic doping)\n\n\nkwargs\n\n\n\n\nReturns\nndarray\nA new float array containing the conductivity.\n\n\n\n\nsource\n\n\nfoo\n\n foo ()",
+    "crumbs": [
+      "research_code"
+    ]
+  }
+]
