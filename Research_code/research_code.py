@@ -3,9 +3,9 @@
 # %% auto 0
 __all__ = ['exp_decay', 'biexp_decay_beta', 'biexp_decay', 'gaussian', 'convolved_exp_decay', 'convolved_biexp_decay',
            'convolved_biexp_decay_beta', 'rebin', 'R2', 'X2', 'fit_result', 'fit_curve', 'fit_trace2', 'global_fit',
-           'basic_plot', 'prepulse_analyser', 'linear_spacing', 'treatment', 'mean_spike', 'plotting_global',
-           'global_plot', 'auto_guess', 'file_save', 'resid_only', 'cos_fn', 'data_reformatter', 'fft_simple',
-           'transmission', 'conductivity', 'four_point', 'foo']
+           'file_loader', 'basic_plot', 'prepulse_analyser', 'linear_spacing', 'treatment', 'mean_spike',
+           'plotting_global', 'global_plot', 'auto_guess', 'file_save', 'resid_only', 'cos_fn', 'data_reformatter',
+           'fft_simple', 'transmission', 'conductivity', 'four_point', 'foo']
 
 # %% ../nbs/research_code.ipynb 3
 import numpy as np
@@ -20,6 +20,8 @@ import matplotlib.pyplot as plt
 import glob,os,re,pathlib
 import seaborn as sns
 from scipy.signal import savgol_filter
+from alive_progress import alive_it, alive_bar
+import time
 
 # %% ../nbs/research_code.ipynb 4
 def exp_decay(x: np.ndarray, # Input array that contains the indpendent variable.
@@ -186,7 +188,10 @@ class fit_result:
 
 
 # %% ../nbs/research_code.ipynb 15
-def fit_curve(named_function,x,y,**kwargs):
+def fit_curve(named_function, # the fit function
+              x:np.ndarray, # independent variable 
+              y:np.ndarray, # dependent variable
+              **kwargs) -> object: # returns a an object of the class 'fit_object'
 
     if 'guess' in list(kwargs.keys()):
         guess = kwargs['guess']
@@ -206,7 +211,7 @@ def fit_curve(named_function,x,y,**kwargs):
     
         all_args.pop(0)
         new_kwargs = {}
-        truth = tuple(x in sub_args for x in all_args)
+        truth = tuple(val in sub_args for val in all_args)
         #truth = np.logical_not(truth)
         j=0
         largs = list(args)
@@ -287,8 +292,8 @@ def fit_trace2(x:np.ndarray, # the independent variable (e.g. x,time), usually t
     return fit_object
 
 # %% ../nbs/research_code.ipynb 17
-def global_fit(named_function, # the name of the function being fitted,
-               x:dict, # Input array that contains the indpendent variable.
+def global_fit(named_function, # the name of the function being fitted
+               x:dict, # Input array that contains the indpendent variable
                y:dict, # dependent variable, can be a matrix
                guess:dict, # guess parameters in a dictionary, with gobal as True or false
               ) ->np.ndarray: # A new float array containing the exponentially decaying function.
@@ -379,8 +384,31 @@ def global_fit(named_function, # the name of the function being fitted,
             #print(f'ya: {ypiece}')
         return ypiece
 
-    
-    popt,pcov = curve_fit(builder,new_x,new_y,p0=guess_mask_local,method='lm')
+    if named_function==convolved_biexp_decay_beta:
+        L_beta = N_args
+        M_beta = len(truth_global)
+        
+        b_low = -np.inf * np.ones(M_beta)
+        b_high = np.inf * np.ones(M_beta)
+        
+        for j in range(2,M_beta,L_beta):
+            b_low[j] = 0
+            b_high[j] = 1
+
+        for j in range(1,M_beta,L_beta):
+            b_low[j] = 0
+
+        for j in range(3,M_beta,L_beta):
+            b_low[j] = 0
+        
+        bounds_lower = np.ma.masked_array(b_low,mask=truth_global).compressed()
+        bounds_upper = np.ma.masked_array(b_high,mask=truth_global).compressed()
+
+        print(guess_mask_local,bounds_lower,bounds_upper)
+        popt,pcov = curve_fit(builder,new_x,new_y,p0=guess_mask_local,bounds=(bounds_lower,bounds_upper),method='trf')
+        
+    else:
+        popt,pcov = curve_fit(builder,new_x,new_y,p0=guess_mask_local,method='lm')
 
     fit_object = fit_result(new_x,new_y,builder,popt,pcov)
 
@@ -428,6 +456,47 @@ def global_fit(named_function, # the name of the function being fitted,
     return fit_object, df
 
 # %% ../nbs/research_code.ipynb 19
+def file_loader(input_list:list, # a list of file names to load
+                name_list:list, # a list of what we want the new files to be named
+                path:str, # a string containing the path to the folder containing the files
+                skip_val=1, # by default skip first row of the file
+                data_type='pump-probe', # type of data being loaded
+               ) -> dict: # returns a dictionary where each key is the name given in name_list and the value is a dataframe with the data
+    data = {name:{} for name in name_list}
+    
+    #bar = alive_it(enumerate(input_list))  # <<-- bar with wrapped items
+    
+    print(f'There are a total of {len(input_list)} files in the directory')
+
+    with alive_bar(len(input_list),force_tty=True) as bar:
+        for i,file in enumerate(input_list):  
+            time.sleep(0.005)
+    
+            #print(f'File: {file} loaded')
+        
+            df = pd.read_excel(path+file,skiprows=skip_val,header=None)
+        
+            df2 = data_reformatter(df)
+
+            if data_type=='pump-probe':
+                t0_loc = (df2['median'] - np.mean(df2['median'][0:10])).abs().argmax()
+            
+                t0 = df2['delay'][t0_loc]
+
+            else:
+                t0_loc = np.argmax(np.abs(df2['mean']))
+                t0 = df2['delay'][t0_loc]
+            
+            #t0 = df2['delay'][(np.abs(df2['median'][0:len2])).idxmax()]
+
+            data[name_list[i]]['t0'] = t0
+            data[name_list[i]]['df'] = df2
+            
+            bar()
+
+    return data
+
+# %% ../nbs/research_code.ipynb 20
 def basic_plot(data_dict,name_array,**kwargs):
 
     props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
@@ -467,6 +536,8 @@ def basic_plot(data_dict,name_array,**kwargs):
         else:
             new_sign=1
         ax.plot(delay-xoffset,new_sign*norm_signal,label=name)
+        if 'errs' in list(kwargs.keys()):
+            ax.plot(delay-xoffset,new_sign*norm_signal,label=name)
         print(f'The time resolution is: {round(1000*(delay[1]-delay[0]),3)} fs') 
     
         # plt.yscale('semilog')
@@ -480,7 +551,7 @@ def basic_plot(data_dict,name_array,**kwargs):
             (ymin,ymax) = kwargs['xlims']
             ax.set_ylim(ymin,ymax)
 
-# %% ../nbs/research_code.ipynb 20
+# %% ../nbs/research_code.ipynb 21
 def prepulse_analyser(dict_input):
 
     df_input = dict_input['df']
@@ -515,7 +586,7 @@ def prepulse_analyser(dict_input):
     
     return df_new
 
-# %% ../nbs/research_code.ipynb 21
+# %% ../nbs/research_code.ipynb 22
 def linear_spacing(df_input,**kwargs):
     
     df_output = df_input.copy()
@@ -544,13 +615,13 @@ def linear_spacing(df_input,**kwargs):
 
     return df_out 
 
-# %% ../nbs/research_code.ipynb 22
+# %% ../nbs/research_code.ipynb 23
 def treatment(dict_input):
     df_input = prepulse_analyser(dict_input) # removes the offset
     df_output = mean_spike(df_input) # calculates the mean, assuming there are some spikes in the data
     return df_output
 
-# %% ../nbs/research_code.ipynb 23
+# %% ../nbs/research_code.ipynb 24
 def mean_spike(df_input):
 
     df_output = df_input.copy()
@@ -588,7 +659,7 @@ def mean_spike(df_input):
     return df_output
 
 
-# %% ../nbs/research_code.ipynb 24
+# %% ../nbs/research_code.ipynb 25
 def plotting_global(named_function,fit_tuple,name_array,data,**kwargs):
 
     (fit_obj,df) = fit_tuple
@@ -670,7 +741,7 @@ def plotting_global(named_function,fit_tuple,name_array,data,**kwargs):
     return 1
     
 
-# %% ../nbs/research_code.ipynb 25
+# %% ../nbs/research_code.ipynb 26
 def global_plot(name_dict,data,guess,**kwargs):
 
     df_names = {name:{} for name in name_dict}
@@ -682,7 +753,7 @@ def global_plot(name_dict,data,guess,**kwargs):
     new_y= {}
     
     for i,name in enumerate(name_dict):
-        offset = df_names[name]['median'][0:30].mean(axis=0)
+        offset = df_names[name]['median'][0:30].mean(axis=0) # y offset
 
         ### experimental
         df_linear =  linear_spacing(df_names[name],col='median')
@@ -701,12 +772,18 @@ def global_plot(name_dict,data,guess,**kwargs):
         
         if 'trange' in list(kwargs.keys()):
             trange=kwargs['trange']
+            if type(trange)==tuple:
+                tranger = trange
+            elif type(trange)==dict:
+                tranger = trange[name]
+                
             tol = np.abs(delay[1]-delay[0])
-            t_start = np.where(np.abs(delay-trange[0])<tol)[0][0]
-            t_end = np.where(np.abs(delay-trange[1])<tol)[0][0]
+            t_start = np.where(np.abs(delay-tranger[0])<tol)[0][0]
+            t_end = np.where(np.abs(delay-tranger[1])<tol)[0][0]
             t_start = 0
             delay = delay[t_start:t_end]
             yval = yval[t_start:t_end]
+                
 
         if 'xlims' in list(kwargs.keys()):
             pass
@@ -720,11 +797,20 @@ def global_plot(name_dict,data,guess,**kwargs):
 
     fit_tuple = global_fit(convolved_biexp_decay_beta, new_x, new_y, guess)
 
+    (fig,df) = fit_tuple
+
+    col_names = [s for s in df.columns if s.startswith('trace')]
+
+    new_col_dict = dict(zip(col_names,name_dict))
+    df.rename(columns=new_col_dict,inplace=True)
+
+    tuple_new = (fig,df)
+
     plotting_global(convolved_biexp_decay_beta,fit_tuple,name_dict,data,**kwargs)
     
-    return fit_tuple
+    return tuple_new
 
-# %% ../nbs/research_code.ipynb 26
+# %% ../nbs/research_code.ipynb 27
 def auto_guess(dict_1,nos_traces):
 
     ([*keys],vals) = zip(*dict_1.items())
@@ -736,21 +822,27 @@ def auto_guess(dict_1,nos_traces):
 
     return new_dict
 
-# %% ../nbs/research_code.ipynb 27
+# %% ../nbs/research_code.ipynb 28
 def file_save(save_name,fig,**kwargs):
-    filename_plot = './Presentation/images/'+save_name+'.svg'
+    dpi=None
+    if 'ext' in list(kwargs.keys()):
+        filename_plot = './Presentation/images/'+save_name+'.'+kwargs['ext']
+        if kwargs['ext']=='png':
+            dpi = 600
+    else:
+        filename_plot = './Presentation/images/'+save_name+'.svg'
+
+    os.makedirs(os.path.dirname(filename_plot), exist_ok=True)
+    fig.savefig(filename_plot, bbox_inches='tight', dpi=dpi, format=kwargs['ext'])
+    
     if 'df' in list(kwargs.keys()):
         filename_table = './Presentation/tables/'+save_name+'.pkl'
         os.makedirs(os.path.dirname(filename_table), exist_ok=True)
         kwargs['df'].to_pickle(filename_table)
-        
-    os.makedirs(os.path.dirname(filename_plot), exist_ok=True)
-    
-    fig.savefig(filename_plot,bbox_inches='tight')
-    
+
     return 1
 
-# %% ../nbs/research_code.ipynb 28
+# %% ../nbs/research_code.ipynb 29
 def resid_only(named_function,fit_tuple,name_array_sub,full_name_array,data,**kwargs):
 
     ''' Common to all code '''
@@ -853,12 +945,12 @@ def resid_only(named_function,fit_tuple,name_array_sub,full_name_array,data,**kw
     return df_out
     
 
-# %% ../nbs/research_code.ipynb 29
+# %% ../nbs/research_code.ipynb 30
 def cos_fn(x,f,A,x0,y0):
     # A,f,phi,y0 = args
     return A*np.cos(2*np.pi*f*(x-x0))+y0
 
-# %% ../nbs/research_code.ipynb 34
+# %% ../nbs/research_code.ipynb 35
 def data_reformatter(df):
 
     """
@@ -902,7 +994,7 @@ def data_reformatter(df):
 
     return df2
 
-# %% ../nbs/research_code.ipynb 35
+# %% ../nbs/research_code.ipynb 36
 def fft_simple(df,**kwargs):
     """
     This is a simple implementation of fft that will work for a DataFrame object
@@ -974,7 +1066,7 @@ def fft_simple(df,**kwargs):
     
     return df2
 
-# %% ../nbs/research_code.ipynb 36
+# %% ../nbs/research_code.ipynb 37
 def transmission(df1,df2):
 
     cols = [s for s in df1 if s.startswith('scan')]
@@ -1013,7 +1105,7 @@ def transmission(df1,df2):
 
     return df
 
-# %% ../nbs/research_code.ipynb 37
+# %% ../nbs/research_code.ipynb 38
 def conductivity(T_in,**kwargs):
     """
     This function calculates the complex conductivity according to equation 1 or 2
@@ -1069,7 +1161,7 @@ def conductivity(T_in,**kwargs):
 
     return df
 
-# %% ../nbs/research_code.ipynb 38
+# %% ../nbs/research_code.ipynb 39
 def four_point(x:np.ndarray, # Input array that contains the independent variable.
     mu_e:np.double, # electron mobility
     mu_h:np.double, # hole mobility
@@ -1114,5 +1206,5 @@ def four_point(x:np.ndarray, # Input array that contains the independent variabl
     return sigma
 
 
-# %% ../nbs/research_code.ipynb 40
+# %% ../nbs/research_code.ipynb 41
 def foo(): pass
