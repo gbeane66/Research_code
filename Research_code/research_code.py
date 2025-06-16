@@ -2,10 +2,11 @@
 
 # %% auto 0
 __all__ = ['exp_decay', 'biexp_decay_beta', 'biexp_decay', 'gaussian', 'convolved_exp_decay', 'convolved_biexp_decay',
-           'convolved_biexp_decay_beta', 'rebin', 'R2', 'X2', 'fit_result', 'fit_curve', 'fit_trace2', 'global_fit',
-           'file_loader', 'basic_plot', 'prepulse_analyser', 'linear_spacing', 'treatment', 'mean_spike',
-           'plotting_global', 'global_plot', 'auto_guess', 'file_save', 'resid_only', 'cos_fn', 'data_reformatter',
-           'fft_simple', 'transmission', 'conductivity', 'four_point', 'foo']
+           'convolved_biexp_decay_beta', 'rebin', 'R2', 'R2_adj', 'X2_adj', 'X2', 'R_standardised', 'fit_result',
+           'interp_data', 'fit_curve', 'fit_trace2', 'global_fit', 'file_loader', 'basic_plot', 'prepulse_analyser',
+           'linear_spacing', 'treatment', 'mean_spike', 'plotting_global', 'global_plot', 'auto_guess', 'file_save',
+           'resid_only', 'cos_fn', 'data_reformatter', 'fft_simple', 'transmission', 'conductivity', 'four_point',
+           'foo']
 
 # %% ../nbs/research_code.ipynb 3
 import numpy as np
@@ -13,6 +14,7 @@ from scipy import constants as consts
 from scipy.optimize import curve_fit
 from scipy.stats import chisquare
 from scipy.fft import fft,fftfreq,rfft, fftshift,fftn
+from scipy.interpolate import interp1d
 import inspect
 import pandas as pd
 import matplotlib as mpl
@@ -92,13 +94,13 @@ def convolved_exp_decay(x:np.ndarray, # Input array that contains the indpendent
     '''
     L = len(x) # length of the independent variable.
 
-    exp_term = exp_decay(x,Amplitude,tau,x0) # The exponential decay.
+    exp_term = exp_decay(x,1,tau,x0) # The exponential decay.
 
     gaussian_term = gaussian(x,1.0,sigma,x0) # The gaussian part, setting the amplitude normalised to 1.0.
     
     convolved = np.convolve(exp_term,gaussian_term,mode='full')[0:L] # convolved function.
 
-    convolved *= (Amplitude-y0)/np.max(convolved) # Normalise the function so the maximum is at Amplitude
+    convolved = Amplitude*convolved/np.max(convolved) # Normalise the function so the maximum is at Amplitude
     
     return convolved + y0
 
@@ -117,13 +119,18 @@ def convolved_biexp_decay(x:np.ndarray, # Input array that contains the indpende
     '''    
     L = len(x) # length of the independent variable.
 
-    biexp_term = biexp_decay(x,Amplitude1,tau1,Amplitude2,tau2,x0) # The biexponential decay.
+    exp_term1 = exp_decay(x,1,tau1,x0) # The biexponential decay.
+
+    exp_term2 = exp_decay(x,1,tau2,x0) # The biexponential decay.
 
     gaussian_term = gaussian(x,1.0,sigma,x0) # The gaussian part, setting the amplitude normalised to 1.0.
     
-    convolved = np.convolve(biexp_term,gaussian_term,mode='full')[0:L] # convolved function.
+    convolved1 = np.convolve(gaussian_term,exp_term1,mode='full')[0:L]
+    convolved2 = np.convolve(gaussian_term,exp_term2,mode='full')[0:L]# convolved function.
 
-    convolved *= (Amplitude1+Amplitude2-y0)/np.max(convolved) # Normalise the function so the maximum is at Amplitude
+    convolved = Amplitude1*convolved1/np.max(convolved1) + Amplitude2*convolved2/np.max(convolved2)
+
+    #convolved *= (Amplitude1+Amplitude2-y0)/np.max(convolved) # Normalise the function so the maximum is at Amplitude
     
     return convolved + y0
 
@@ -142,13 +149,19 @@ def convolved_biexp_decay_beta(x:np.ndarray, # Input array that contains the ind
     '''    
     L = len(x) # length of the independent variable.
 
-    biexp_term = biexp_decay_beta(x,Amplitude1,tau1,beta,tau2,x0) # The biexponential decay.
-
     gaussian_term = gaussian(x,1.0,sigma,x0) # The gaussian part, setting the amplitude normalised to 1.0.
     
-    convolved = np.convolve(biexp_term,gaussian_term,mode='full')[0:L] # convolved function.
+    exp_term1 = np.exp(-(x-x0)/tau1)
 
-    convolved *= (Amplitude1-y0)/np.max(convolved) # Normalise the function so the maximum is at Amplitude
+    exp_term2 = np.exp(-(x-x0)/tau2)
+
+    convolved_term1 = np.convolve(gaussian_term,exp_term1,mode='full')[0:L]
+
+    convolved_term2 = np.convolve(gaussian_term,exp_term2,mode='full')[0:L]
+    
+    convolved = beta * convolved_term1/np.max(convolved_term1)
+
+    convolved += (1 - beta) * convolved_term2/np.max(convolved_term2)
     
     return convolved + y0
 
@@ -172,27 +185,77 @@ def R2(xdata,ydata,residual):
         return (1 - ss_res/ss_tot)
 
 # %% ../nbs/research_code.ipynb 13
+def R2_adj(xdata,ydata,residual,popt):
+        N_points = len(xdata)
+        nos_fit_params = len(popt)
+        ss_tot = np.sum((ydata-np.mean(ydata))**2)
+        ss_res = np.sum(residual**2)
+        R2 = 1 - ss_res/ss_tot
+        R2_adj = 1 - (1 - R2)*(N_points-1)/(N_points-nos_fit_params-1)
+        return R2_adj
+
+# %% ../nbs/research_code.ipynb 14
+def X2_adj(xdata,ydata,residual,named_function,popt):
+    N_points = len(xdata)
+    nos_fit_params = len(popt)
+    rss = np.sum(residual**2)
+    x2_adj = rss / (N_points-nos_fit_params)
+    return x2_adj
+
+# %% ../nbs/research_code.ipynb 15
 def X2(xdata,ydata,residual,named_function,popt):
     expected_values = named_function(xdata,*popt)
     return np.sum((1/expected_values) * residual**2)
 
-# %% ../nbs/research_code.ipynb 14
+# %% ../nbs/research_code.ipynb 16
+def R_standardised(xdata,ydata,residual,named_function,popt):
+
+    N_points = len(xdata)
+    
+    nos_fit_params = len(popt)
+    
+    RSS = np.sum(residual**2)
+
+    RSE = np.sqrt(RSS/(N_points - nos_fit_params - 1))
+
+    X = np.vstack([residual,np.ones(len(residual))]).T
+
+    h_leverage = np.diag(X @ np.linalg.inv(X.T @ X) @ X.T)
+
+    r_standardised = residual/np.sqrt(RSE*np.sqrt(1-h_leverage))
+
+    return r_standardised
+
+# %% ../nbs/research_code.ipynb 17
 class fit_result:
     def __init__(self,xdata,ydata,named_function,popt,pcov):
         self.popt = popt
         self.pstd = np.sqrt(np.diag(pcov))
         self.residual = ydata-named_function(xdata,*popt)
         self.R2 = R2(xdata,ydata,self.residual)
-        self.R2_adj = 1 - (1 - self.R2)*(len(xdata) - 1)/(len(xdata) - len(popt) - 1)
+        self.R2_adj = R2_adj(xdata,ydata,self.residual,popt)
         self.RMSE = np.sqrt(np.sum(self.residual**2) / (len(xdata) - len(popt)))
+        self.chi2_adj = X2_adj(xdata,ydata,self.residual,named_function,popt)
+        self.r_standardised = R_standardised(xdata,ydata,self.residual,named_function,popt)
 
+# %% ../nbs/research_code.ipynb 18
+def interp_data(x:np.ndarray, # independent variable
+                y:np.ndarray, # dependent variable
+               ): # returns interpolated data for minimum delta
+    interp_f = interp1d(x,y)
+    xx_new = np.arange(np.min(x),np.max(x),np.diff(x).min()*1)
+    yy_new = interp_f(xx_new)
 
-# %% ../nbs/research_code.ipynb 15
+    return (xx_new,yy_new)
+
+# %% ../nbs/research_code.ipynb 19
 def fit_curve(named_function, # the fit function
               x:np.ndarray, # independent variable 
               y:np.ndarray, # dependent variable
               **kwargs) -> object: # returns a an object of the class 'fit_object'
 
+    (xnew,ynew) = interp_data(x,y)
+    
     if 'guess' in list(kwargs.keys()):
         guess = kwargs['guess']
     else:
@@ -245,7 +308,7 @@ def fit_curve(named_function, # the fit function
 
     fun2 = lambda x,*args: fmod(named_function,x,*args,**kwargs) 
     
-    popt,pcov = curve_fit(fun2,x,y,p0=guess_mask_float,method=method)
+    popt,pcov = curve_fit(fun2,xnew,ynew,p0=guess_mask_float,method=method)
 
     fit_object = fit_result(x,y,fun2,popt,pcov)
     
@@ -270,7 +333,7 @@ def fit_curve(named_function, # the fit function
     fit_object.pstd = pstd_new
     return fit_object
 
-# %% ../nbs/research_code.ipynb 16
+# %% ../nbs/research_code.ipynb 20
 def fit_trace2(x:np.ndarray, # the independent variable (e.g. x,time), usually time here
               y:np.ndarray, # the dependent variable (e.g. y)
               trange:tuple, # the x range to fit the data over
@@ -291,7 +354,7 @@ def fit_trace2(x:np.ndarray, # the independent variable (e.g. x,time), usually t
     
     return fit_object
 
-# %% ../nbs/research_code.ipynb 17
+# %% ../nbs/research_code.ipynb 21
 def global_fit(named_function, # the name of the function being fitted
                x:dict, # Input array that contains the indpendent variable
                y:dict, # dependent variable, can be a matrix
@@ -455,7 +518,7 @@ def global_fit(named_function, # the name of the function being fitted
     
     return fit_object, df
 
-# %% ../nbs/research_code.ipynb 19
+# %% ../nbs/research_code.ipynb 23
 def file_loader(input_list:list, # a list of file names to load
                 name_list:list, # a list of what we want the new files to be named
                 path:str, # a string containing the path to the folder containing the files
@@ -496,7 +559,7 @@ def file_loader(input_list:list, # a list of file names to load
 
     return data
 
-# %% ../nbs/research_code.ipynb 20
+# %% ../nbs/research_code.ipynb 24
 def basic_plot(data_dict,name_array,**kwargs):
 
     props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
@@ -551,7 +614,7 @@ def basic_plot(data_dict,name_array,**kwargs):
             (ymin,ymax) = kwargs['xlims']
             ax.set_ylim(ymin,ymax)
 
-# %% ../nbs/research_code.ipynb 21
+# %% ../nbs/research_code.ipynb 25
 def prepulse_analyser(dict_input):
 
     df_input = dict_input['df']
@@ -586,7 +649,7 @@ def prepulse_analyser(dict_input):
     
     return df_new
 
-# %% ../nbs/research_code.ipynb 22
+# %% ../nbs/research_code.ipynb 26
 def linear_spacing(df_input,**kwargs):
     
     df_output = df_input.copy()
@@ -615,13 +678,13 @@ def linear_spacing(df_input,**kwargs):
 
     return df_out 
 
-# %% ../nbs/research_code.ipynb 23
+# %% ../nbs/research_code.ipynb 27
 def treatment(dict_input):
     df_input = prepulse_analyser(dict_input) # removes the offset
     df_output = mean_spike(df_input) # calculates the mean, assuming there are some spikes in the data
     return df_output
 
-# %% ../nbs/research_code.ipynb 24
+# %% ../nbs/research_code.ipynb 28
 def mean_spike(df_input):
 
     df_output = df_input.copy()
@@ -659,7 +722,7 @@ def mean_spike(df_input):
     return df_output
 
 
-# %% ../nbs/research_code.ipynb 25
+# %% ../nbs/research_code.ipynb 29
 def plotting_global(named_function,fit_tuple,name_array,data,**kwargs):
 
     (fit_obj,df) = fit_tuple
@@ -741,7 +804,7 @@ def plotting_global(named_function,fit_tuple,name_array,data,**kwargs):
     return 1
     
 
-# %% ../nbs/research_code.ipynb 26
+# %% ../nbs/research_code.ipynb 30
 def global_plot(name_dict,data,guess,**kwargs):
 
     df_names = {name:{} for name in name_dict}
@@ -810,7 +873,7 @@ def global_plot(name_dict,data,guess,**kwargs):
     
     return tuple_new
 
-# %% ../nbs/research_code.ipynb 27
+# %% ../nbs/research_code.ipynb 31
 def auto_guess(dict_1,nos_traces):
 
     ([*keys],vals) = zip(*dict_1.items())
@@ -822,7 +885,7 @@ def auto_guess(dict_1,nos_traces):
 
     return new_dict
 
-# %% ../nbs/research_code.ipynb 28
+# %% ../nbs/research_code.ipynb 32
 def file_save(save_name,fig,**kwargs):
     dpi=None
     if 'ext' in list(kwargs.keys()):
@@ -842,7 +905,7 @@ def file_save(save_name,fig,**kwargs):
 
     return 1
 
-# %% ../nbs/research_code.ipynb 29
+# %% ../nbs/research_code.ipynb 33
 def resid_only(named_function,fit_tuple,name_array_sub,full_name_array,data,**kwargs):
 
     ''' Common to all code '''
@@ -945,12 +1008,12 @@ def resid_only(named_function,fit_tuple,name_array_sub,full_name_array,data,**kw
     return df_out
     
 
-# %% ../nbs/research_code.ipynb 30
+# %% ../nbs/research_code.ipynb 34
 def cos_fn(x,f,A,x0,y0):
     # A,f,phi,y0 = args
     return A*np.cos(2*np.pi*f*(x-x0))+y0
 
-# %% ../nbs/research_code.ipynb 35
+# %% ../nbs/research_code.ipynb 39
 def data_reformatter(df):
 
     """
@@ -962,7 +1025,7 @@ def data_reformatter(df):
     """
     data = df.to_numpy()
 
-    Ntot,_ = np.shape(data) # totoal number of rows
+    Ntot,_ = np.shape(data) # total number of rows
 
     delays = np.unique(data[:,0]) # unique delay positions in mm
     
@@ -989,12 +1052,14 @@ def data_reformatter(df):
     df2['median'] = median_col
     
     df2['std'] = std_col # augment the dataframe with a new column containing the std
+
+    df2['se'] = std_col / np.sqrt(M)
     
     df2.insert(loc=0,column='delay',value=delays) # add a new column at the start of the DataFrame containing the delays
 
     return df2
 
-# %% ../nbs/research_code.ipynb 36
+# %% ../nbs/research_code.ipynb 40
 def fft_simple(df,**kwargs):
     """
     This is a simple implementation of fft that will work for a DataFrame object
@@ -1066,7 +1131,7 @@ def fft_simple(df,**kwargs):
     
     return df2
 
-# %% ../nbs/research_code.ipynb 37
+# %% ../nbs/research_code.ipynb 41
 def transmission(df1,df2):
 
     cols = [s for s in df1 if s.startswith('scan')]
@@ -1105,7 +1170,7 @@ def transmission(df1,df2):
 
     return df
 
-# %% ../nbs/research_code.ipynb 38
+# %% ../nbs/research_code.ipynb 42
 def conductivity(T_in,**kwargs):
     """
     This function calculates the complex conductivity according to equation 1 or 2
@@ -1161,7 +1226,7 @@ def conductivity(T_in,**kwargs):
 
     return df
 
-# %% ../nbs/research_code.ipynb 39
+# %% ../nbs/research_code.ipynb 43
 def four_point(x:np.ndarray, # Input array that contains the independent variable.
     mu_e:np.double, # electron mobility
     mu_h:np.double, # hole mobility
@@ -1206,5 +1271,5 @@ def four_point(x:np.ndarray, # Input array that contains the independent variabl
     return sigma
 
 
-# %% ../nbs/research_code.ipynb 41
+# %% ../nbs/research_code.ipynb 45
 def foo(): pass
