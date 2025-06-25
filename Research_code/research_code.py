@@ -5,8 +5,8 @@ __all__ = ['exp_decay', 'biexp_decay_beta', 'biexp_decay', 'gaussian', 'convolve
            'convolved_biexp_decay_beta', 'rebin', 'R2', 'R2_adj', 'X2_adj', 'X2', 'R_standardised', 'fit_result',
            'interp_data', 'fit_curve', 'fit_trace2', 'global_fit', 'file_loader', 'basic_plot', 'prepulse_analyser',
            'linear_spacing', 'treatment', 'mean_spike', 'plotting_global', 'global_plot', 'auto_guess', 'file_save',
-           'resid_only', 'cos_fn', 'data_reformatter', 'fft_simple', 'transmission', 'conductivity', 'four_point',
-           'foo']
+           'resid_only', 'cos_fn', 'electric_field', 'data_reformatter', 'fft_simple', 'transmission', 'conductivity',
+           'four_point', 'foo']
 
 # %% ../nbs/research_code.ipynb 3
 import numpy as np
@@ -1014,7 +1014,30 @@ def cos_fn(x,f,A,x0,y0):
     return A*np.cos(2*np.pi*f*(x-x0))+y0
 
 # %% ../nbs/research_code.ipynb 39
-def data_reformatter(df):
+def electric_field(input_data,
+                   conversion_scale, #from oscilloscope magnitude to LIA reading
+                   lambda0, # in nm
+                   Si_in=True):
+
+    n0 = 2.7830
+    n_air = 1.0
+    r41 = 4.04e-12 # m/V 
+    L = 400e-6 # m
+    lambda0 *= 1e-9 # m
+    t_refl = (n0 - n_air)/(n0 + n_air)
+
+    E_out_scale = lambda0 / (2*np.pi*n0**3*r41*t_refl*L)
+
+    E_out = np.arcsin(input_data*1e-3*conversion_scale/12) * E_out_scale
+
+    scale=1
+    if Si_in==True:
+        scale = 0.8
+
+    return (E_out/scale)/1e5 # kV/cm
+
+# %% ../nbs/research_code.ipynb 40
+def data_reformatter(df,**kwargs):
 
     """
     The purpose of this function is to repackage or change the format of the data, 
@@ -1022,7 +1045,15 @@ def data_reformatter(df):
     different columns for each scan. The data is also augmented with two additional 
     rows - the mean and the std of the scans.
 
+    kwargs here are used to either correct result to E(kV) or not
     """
+    if kwargs['convert_to_E']==True:
+        scale_LIA = kwargs['conversion_scale']
+        lambda0 = kwargs['lambda0']
+        Si_in = kwargs['Si_in']
+    else:
+        scale_LIA = 1.0
+        
     data = df.to_numpy()
 
     Ntot,_ = np.shape(data) # total number of rows
@@ -1040,6 +1071,12 @@ def data_reformatter(df):
     col_names = {i:f'scan{i}' for i in range(M)} # create an array with names like 'scan0, scan1, ....'
     
     df2 = df2.rename(columns=col_names) # rename the columns
+
+    for col in col_names:
+        df2[col] = electric_field(df2[col],
+                                  scale_LIA,
+                                  lambda0,
+                                  Si_in)
 
     mean_col = df2.mean(axis=1) # calculate a new column containing the mean value for each delay
 
@@ -1059,7 +1096,7 @@ def data_reformatter(df):
 
     return df2
 
-# %% ../nbs/research_code.ipynb 40
+# %% ../nbs/research_code.ipynb 41
 def fft_simple(df,**kwargs):
     """
     This is a simple implementation of fft that will work for a DataFrame object
@@ -1131,7 +1168,7 @@ def fft_simple(df,**kwargs):
     
     return df2
 
-# %% ../nbs/research_code.ipynb 41
+# %% ../nbs/research_code.ipynb 42
 def transmission(df1,df2):
 
     cols = [s for s in df1 if s.startswith('scan')]
@@ -1170,7 +1207,7 @@ def transmission(df1,df2):
 
     return df
 
-# %% ../nbs/research_code.ipynb 42
+# %% ../nbs/research_code.ipynb 43
 def conductivity(T_in,**kwargs):
     """
     This function calculates the complex conductivity according to equation 1 or 2
@@ -1226,7 +1263,7 @@ def conductivity(T_in,**kwargs):
 
     return df
 
-# %% ../nbs/research_code.ipynb 43
+# %% ../nbs/research_code.ipynb 44
 def four_point(x:np.ndarray, # Input array that contains the independent variable.
     mu_e:np.double, # electron mobility
     mu_h:np.double, # hole mobility
@@ -1271,5 +1308,5 @@ def four_point(x:np.ndarray, # Input array that contains the independent variabl
     return sigma
 
 
-# %% ../nbs/research_code.ipynb 45
+# %% ../nbs/research_code.ipynb 46
 def foo(): pass
