@@ -1017,8 +1017,13 @@ def cos_fn(x,f,A,x0,y0):
 def electric_field(input_data,
                    conversion_scale, #from oscilloscope magnitude to LIA reading
                    lambda0, # in nm
-                   Si_in=True):
+                   Si_in):
 
+    '''
+    Note that LIA reading is taken with chopper on and oscilloscope reading is taken with chopper off
+    Therefore we need an extra factor of 2 multiplied by the LIA reading
+    '''
+    
     n0 = 2.7830
     n_air = 1.0
     r41 = 4.04e-12 # m/V 
@@ -1028,7 +1033,8 @@ def electric_field(input_data,
 
     E_out_scale = lambda0 / (2*np.pi*n0**3*r41*t_refl*L)
 
-    E_out = np.arcsin(input_data*1e-3*conversion_scale/12) * E_out_scale
+    
+    E_out = np.arcsin(input_data*1e-3*conversion_scale/2) * E_out_scale
 
     scale=1
     if Si_in==True:
@@ -1072,11 +1078,12 @@ def data_reformatter(df,**kwargs):
     
     df2 = df2.rename(columns=col_names) # rename the columns
 
-    for col in col_names:
-        df2[col] = electric_field(df2[col],
-                                  scale_LIA,
-                                  lambda0,
-                                  Si_in)
+    col_names_new = ['scan'+str(i) for i in range(M)]
+    if kwargs['convert_to_E']==True:
+        for col in col_names_new:
+            df2[col] = electric_field(df2[col],scale_LIA,lambda0,Si_in)
+    else:
+        pass
 
     mean_col = df2.mean(axis=1) # calculate a new column containing the mean value for each delay
 
